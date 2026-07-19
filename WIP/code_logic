@@ -58,6 +58,7 @@
   - Implement pyarrow based filter operation before reading many columns for operations/storage --- so that you know exactly how many rows and columns need to be stored on the live RAM for  the full code run. This should help identify the memory requirements for a given job. --- Let user know what memory requirements should be asked while submitting a job.
   - there's an extra col "z" in the parquet file. Is it supposed to be there in the future datasets as well? Remove that if that's just a copy of spec_z.
   - putting all=true in nonflux cols ignored spec_z and phot_z. Correct that.
+  - write a README file on usage of the sample selection code and also specify how we can generalise and change the names of the source catalog columns without changing the code much.
 
 Get the batch sizing working
 To Chun-Hao To: instead of remembering exactly what you did to produce the e2e catalog, can you please add the metadata in the parquet file creation itself?
