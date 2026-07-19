@@ -1,0 +1,74 @@
+
+Question to explore: 
+===================
+- what kind of flags, columns will I need to compute a survey property map or
+  clustering weights? This information should go to CAS and SCM for designing
+  the catalogs. (either the public or internal)
+
+
+
+e2e data products produced:
+- slimfarmer based flux catalog (has more columns) 
+- diffsky based 500 sq deg catalog and reformatted for e2e
+- photo-z catalog from Brett (produced on this catalog of a different one?)
+- healsparse mask for randoms creation
+- SCM level example catalog
+
+(By Sid)Explanation of how shear is computed and how shear calibration from
+metadetection is used.
+slack: https://roman-hlis-cosmology.slack.com/archives/C0B6S0ZRKFG/p1782158187678359?thread_ts=1780773721.282879&cid=C0B6S0ZRKFG
+- To do shear calibration with metadetection, we apply a shear to the image before detection and object measurement.
+  ns: no shear is applied
+  1p: (+0.01, 0.00)
+  2p: (0.00, +0.01)
+  1m: (-0.01, 0.00)
+  2m: (0.00, -0.01)
+
+  instead of forcing matches between these catalogs, the mean shear response is computed based on
+  (<1p> - <1m>) / (2 * 0.01) or
+  (<2p> - <2m>) / (2 * 0.01)
+  and that can be used to calibrate the mean shear from <ns>
+
+
+Summary from slack (Latest update on top)
+-----------------
+
+Diffsky based catalog in our e2e format (~ 500 sq deg) (version =?? hlwas_cosmos_260215_02_17_2026)
+- slack link
+  https://roman-hlis-cosmology.slack.com/archives/C0B6S0ZRKFG/p1782157634596139?thread_ts=1780773721.282879&cid=C0B6S0ZRKFG
+- data: https://drive.google.com/drive/folders/1Wqp6ucYnr86uA51DgOE0h5QdsdYl6E3f
+- 
+
+Demanded of columns in the collab:
+ - SNR (possibly multiband value), not just flux/fluxerr in one band:
+   https://roman-hlis-cosmology.slack.com/archives/C0B6S0ZRKFG/p1780780480116329?thread_ts=1780773721.282879&cid=C0B6S0ZRKFG
+ - star-galaxy separation flag, or score for sample selection (not just for
+   actual easy to remove stars via star-mask, but to either (de)select faint
+   galaxies that won't be captured by the star mask.)
+ - 
+
+About catalog (small catalog): https://roman-hlis-cosmology.slack.com/archives/C0B6S0ZRKFG/p1780773721282879
+- a simple slimfarmer run on mosaic 1 of DC25 sim (December 2025 5sq deg area
+  run of metadetect), which are cross matched to meta and truth catalog to get
+  g1, g2 and redshift. The pguass and gold photometry are the same for
+  simplicity. (The last sentence is wrong, they are not the same,  see the paranthesis below.)
+- What is gold catalog? (Check direct message to Chun-Hao, he thinks it might be just the truth photometry from diffsky.)
+* SlimFarmer or LSST-DM run on IMCOM coadds - which will produce independent
+  detections and photometry measurements compared to metadetect runs on IMCOM
+  coadds.
+
+
+- Regarding Object ID: 
+	https://roman-hlis-cosmology.slack.com/archives/C0B6S0ZRKFG/p1780603525216159?thread_ts=1780592628.589999&cid=C0B6S0ZRKFG
+
+    Communication
+    -------------
+    Chun-Hao: keep ObjecID for each detection self-consistently
+    Dida: Keep SOC IDs too
+    
+    Brett: 
+        Can you add slimfarmer photometry (flux and flux err) for ugrizyYJH?
+        Related: is the e2e test supposed to be emulating the medium tier or deep tier? If the latter, then add ZFK+W filters to the slimfarmer list
+    
+    Chun-Hao to Navin: Photoz estimate will be an internal CAS connection. So not in this catalog.
+

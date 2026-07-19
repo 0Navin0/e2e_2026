@@ -1,0 +1,19 @@
+1. explore the comparison between pgauss and gold photometries. ==> Currently
+the gold photometry seems to just be the placeholder for (something???).
+Chun-Hao to thinks, he put true photometry values for gold column. For for e2e
+timeline, we are all expected to use PGAUSS photometry, if we don't want to use
+just the truth photometries.
+  * In principle you should be able to check by crossmatching the objects with
+    the diffsky catalog (correct version) to see if gold is really the truth
+    fluxes.
+
+2. Create MagLim/FluxLim samples => compare across photometry types and using
+truth values (True i mag vs gold vs pgauss values)
+
+3. use the point z estimates provided by Brett to make samples (likely flexZBoost?)
+
+4. Also, make and compare samples using Cardinal like photo-z quality instead of earlier gaussian propagation
+5. Can you get some kind of an equivalent selection criteria in Roman bands for MagLim?
+
+Use the ~500 diffsky sq deg catalog for sample selection
+Use no shear column for sample selection
