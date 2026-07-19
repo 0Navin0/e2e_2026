@@ -1,0 +1,64 @@
+default:
+  description: "Initialize default arguments when no filter is supposed to be passed"
+  outdir: ""
+  source_in: "/work/nlc38/e2e_2026/diffsky_cat/e2e_catalog_noshear.parquet"
+  redshift_in: "/work/nlc38/e2e_2026/diffsky_cat/flexzboost_run1/zscatter_data.hdf5"
+  survey: 
+    all: false
+    which: "roman"
+  downSample:
+    factor: null
+    fraction: null
+  photometry:
+    all: false
+    which: ["gold", "pgauss"]
+  native_prop: 
+    nonflux_prop:
+      all: false
+      which: ["objectid", "ra", "phot_z"]
+      filters:
+        - {col: "phot_z", type: "range", bounds: [0.0, 0.1], inequality: [">=", "<"]}
+    flux_cols:
+      all: false
+      which: []
+      filters: []
+    flux_err_cols: false
+  derived_prop:
+    get_mags:
+      all: false
+      which: ["Y"]
+      filters:
+        - {col: "Y", type: "max", value: 24, inequality: "<="}
+    mag_err_cols: false
+
+lsst_gold_y1:
+  version: "14Jul2026"
+  description: "Testing the code to generate a downsampled subsample from the full dataset."
+  outdir: "package_validation/lsst/gold"
+  downSample:
+    fraction: 0.01
+  survey: 
+    all: false
+    which: "roman"
+  photometry_type:
+    all: false
+    which: ["gold", "pgauss"]
+  native_prop: 
+    nonflux_prop:
+      all: false
+      which: ["ra", "dec", "g1", "g2", "spec_z", "phot_z"]
+      filters:
+        - {col: "z_phot", type: "range", bounds: [0.0, 2.4], inequality: [">=", "<"]}
+    flux_cols:
+      all: false
+      which: []
+      filter: []
+    flux_err_cols: false
+  derived_prop:
+    get_mags:
+      all: false
+      which: ["YJ"]
+      filters:
+        - {col: "Y", photometry_type: "gold", quantity: "mag", survey: "roman", type: "max", value: 30, inequality: "<="}
+        - {col: ["u", "g", "r"], photometry_type: "gold", quantity: "mag", survey: "lsst", type: "max", value: 24, inequality: "<="}
+    mag_err_cols: false

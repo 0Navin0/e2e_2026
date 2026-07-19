@@ -1,0 +1,63 @@
+# Create a package for sample selection given the current E2E data formats.
+# Keep flexibility for modifying the name of input catalog column names.
+# Document the general idea and quick fixes / easy generalisation or extension opportunities 
+
+  - the package should allow the user to rebase the location of input files in
+    their systems and then the code should work assuming those input files.
+
+  - Take user specified output location to drop the catalogs in a particular strucutre decided by the user config 
+	e.g. rubin/y1/somefilename.parquet
+	should trigger creation of the subdirectories and files starting from some root level.
+
+  - use schema of the parquet file ==> number of total objects in the metadetection+slimFarmer catalog
+
+  - decide on the random downsampling from the very beginning
+      * construct an array of random indices of object given the total object count
+      * Use yaml file structure from user to decide what all columns need to be
+      * read from the input source catalog (metadetect+slimFarmer catalog).
+      * This decision should include the information of which all columns (even
+      * if extra) will be needed to compute some derived quantities and in the
+      * end drop the extra columns that's not going to be the part of output
+      * data file. Store the random state of the random number generator in
+      * general metadata of the file for reproducibility.
+
+      * Process the parquet file data in batches, so you don't overload the
+      * full memory and decide the batch size dynamically considering the
+      * number of objects after requested downsampling, keep an upper limit on
+      * the number of total entries=rows*columns that should decide the batch
+      * size.
+
+  - the output file should always have objectid column irrespective of the user asked for it or not.
+  - setup some global env variables like root path, seed etc in a separate yaml
+    file once 
+  - config should allow taking "ugri" pr ["u","g","r","i"] both input styles
+  - the code should be able to apply magnitude cuts on both bands of roman and
+    rubin, if asked. But may return only magnitude/flux from only one survey if user wants that.
+  - pass bands from both roman and rubin, if you ask for columns from both/all
+    surveys. This should be implemented while setting up the columns to be read
+    from the input file.
+  - order the output columns in file, in objectid,ra,dec,phot_z,spec_z,flux_cols,other_prop
+
+  - I've checked that passing 
+        - {col: ["u", "g", "r"], photometry_type: "gold", quantity: "mag", survey: "lsst", type: "max", value: 24, inequality: "<="}
+    as expected, works same as below:
+        - {col: "u", photometry_type: "gold", quantity: "mag", survey: "lsst", type: "max", value: 24, inequality: "<="}
+        - {col: "g", photometry_type: "gold", quantity: "mag", survey: "lsst", type: "max", value: 24, inequality: "<="}
+        - {col: "r", photometry_type: "gold", quantity: "mag", survey: "lsst", type: "max", value: 24, inequality: "<="}
+  - check that filters on columns that are not asked to appear in the output file are still applied. ---> yes, it works.
+	=> just check with filters on u,g and save u,g bands
+	=> check with filters on u,g,r but only save u,g
+	=> save all three bands and explicityly check by putting extra filter on r band by hand and matching the objects with the above catalogs.
+  - checked that the native filters (phot_z) with/without filters give consistent results.
+	=> created two files 0<=phot_z<1. And the same ugr filters are described above.
+	=> and no cut on phot_z. And the same ugr filters are described above.
+	=> second file reproduces the first one with phot_z<1
+
+  - apply raw column filter at the time of reading the raw data. And derived filters after the derived quantities are computed. -- this can significantly improve the speed. Do this if current implementation is slow for the current dataset. In future this can be a limitation with biggest imaginable dataset.
+  - currently asking for "all" in nonflux properties, doesn't include phot_z and spec_z??? implement that.
+  - Implement pyarrow based filter operation before reading many columns for operations/storage --- so that you know exactly how many rows and columns need to be stored on the live RAM for  the full code run. This should help identify the memory requirements for a given job. --- Let user know what memory requirements should be asked while submitting a job.
+  - there's an extra col "z" in the parquet file. Is it supposed to be there in the future datasets as well? Remove that if that's just a copy of spec_z.
+  - putting all=true in nonflux cols ignored spec_z and phot_z. Correct that.
+
+Get the batch sizing working
+To Chun-Hao To: instead of remembering exactly what you did to produce the e2e catalog, can you please add the metadata in the parquet file creation itself?

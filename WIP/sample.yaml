@@ -1,0 +1,39 @@
+# Update the default as and when you need, mostly when updating the
+# pipeline structure. This dictionary structure directly interfaces
+# with the sample selection code machinery.
+default:
+  description: "initialize default arguments when no filter is supposed to be passed"
+  outdir: ""
+  detection_in: null
+  downSample:
+    factor: null # use any one
+    fraction: null # use any one
+  filters:
+    main: null
+    flux: null
+    sca: null
+    derived: null
+  flux_cols:
+    all: true
+    which: [] # if specified, will only store this band flux
+  get_mags:
+    all: true
+    which: [] # if specified, will only store this band magnitude
+  main_cols:
+    all: false
+    which: ["ra", "dec", "redshift", "um_source_galaxy_obs_sm"]
+
+
+lsst_gold_y1:
+  version: "14Jul2026"
+  description: "Testing the code to general a downsamled, subsmaple from the full dataset."
+  outdir: "package_validation/lsst/gold"
+  downSample:
+    fraction: 0.01
+  get_mags:
+    all: True
+    which: []
+  filters:
+    - {col: "z_phot", type: "range", bounds: [0.0, 2.4], inequality: [">=", "<"]}
+    - {col: "Y", quantity: "mag", survey:"roman", type: "max", value: 30, inequality: "<="}
+    - {col: ["u", "g", "r"], quantity: "mag", survey:"lsst", type:"max", value: 24, inequality: "<="}

@@ -1,0 +1,338 @@
+maglim_fluxlim_superset: 
+  sample_name: &maglim_fluxlim_superset maglim_fluxlim_superset
+  verbose: true
+  version: &maglim_fluxlim_superset_date "17Jul2026"
+  description: "Storing superset data to create a MagLim/fluxLim like sample on LSST i-band. Also imposing relevent photo-z cuts. Further magLim i-photo-z selection will need to be appiled later. This catalog will be scanned to create maglim photoz-magnitude cut and then pass the MagLim sample to Boyan for SOMPZ run. At the e2e stage, gold and pgauss are the same."
+  outdir: "package_validation/survey_all/photmtry_all/maglim_fluxlim_superset"
+  foutname: [*maglim_fluxlim_superset, "_", *maglim_fluxlim_superset_date]
+  downsample:
+    fraction: null
+    factor: null
+  survey:
+    all: true
+    which: []
+  photometry_type:
+    all: true
+    which: []
+  native_prop:
+    nonflux_prop:
+      all: true
+      which: ["ra", "dec", "spec_z", "phot_z"]
+    filters:
+      - {col: "phot_z", type: "range", bounds: [0.0, 1.4], inequality: [">=", "<"]}
+  flux_cols:
+    all: true
+    which: []
+    filters: []
+    flux_err_cols: true
+  derived_prop:
+    get_mags:
+      all: true
+      which: []
+      filters:
+        - {col: "i", photometry_type: "gold", quantity: "mag", survey: "lsst", type: "range", bounds: [17,24], inequality: [">","<="]}
+      mag_err_cols: true
+
+one_survey_all_photomtry: 
+  sample_name: &x one_survey_all_photomtry
+  verbose: true
+  version: &x_date "16Jul2026"
+  description: "check if columns from both photometry types are stored."
+  outdir: "package_validation/roman/photmtry_all/ds_0.01_Y_le_23"
+  foutname: [*x, "_", *x_date]
+  
+  downsample:
+    fraction: null
+    factor: 100
+
+  survey:
+    all: false
+    which: "roman"
+
+  photometry_type:
+    all: all
+
+  native_prop:
+    nonflux_prop:
+      all: false
+      which: ["ra", "dec", "spec_z", "phot_z"]
+
+  flux_cols:
+    all: false
+    which: []
+    filters: []
+    flux_err_cols: false
+
+  derived_prop:
+    get_mags:
+      all: all
+      which: []
+      filters:
+        - {col: "Y", photometry_type: "gold", quantity: "mag", survey: "roman", type: "max", value: 23, inequality: "<="}
+      mag_err_cols: false
+
+multisurvey_info_check: 
+  sample_name: &multisurvey_info_check multisurvey_info_check 
+  verbose: true
+  version: &multisurvey_info_check_date "16Jul2026_full_data"
+  description: "check if columns from both surveys are stored. Trying out the speed in order to save full dataset."
+  outdir: "package_validation/survey_all/photmtry_all/ds_0.01_i_le_23"
+  foutname: [*multisurvey_info_check, "_", *multisurvey_info_check_date]
+  
+  downsample:
+    fraction: null
+    factor: null
+
+  survey:
+    all: true
+
+  photometry_type:
+    all: true
+
+  native_prop:
+    nonflux_prop:
+      all: true
+      which: []
+
+  flux_cols:
+    all: true
+    which: []
+    filters: []
+    flux_err_cols: false
+
+  derived_prop:
+    get_mags:
+      all: false
+      which: []
+      mag_err_cols: false
+
+lsst_gold_all_rows_cut_on_ug_noCut_on_r: 
+  sample_name: &lsst_gold_all_rows_cut_on_ug_noCut_on_r lsst_gold_all_rows_cut_on_ug_noCut_on_r
+  verbose: true
+  version: &lsst_gold_all_rows_cut_on_ug_noCut_on_r_date "16Jul2026"
+  description: "using lsst gold catalog to create an r-band superset of earlier run lsst_gold_all_rows_noRedshiftCut. This is to test that filters on even those bands work fine that aren't being queried for storing. The idea is to save magnitudes in ugr bands, but not apply any cut on r-band. Then use this column to apply r-band threshold by hand and compare with the smaller dataset created earlier."
+  outdir: "package_validation/lsst/gold/ugr_cut_on_only_ug"
+  foutname: [*lsst_gold_all_rows_cut_on_ug_noCut_on_r, "_", *lsst_gold_all_rows_cut_on_ug_noCut_on_r_date]
+  
+  downsample:
+    fraction: null
+    factor: null
+
+  survey:
+    all: false
+    which: "lsst"
+
+  photometry_type:
+    all: false
+    which: "gold"
+
+  native_prop:
+    nonflux_prop:
+      all: false
+      which: ["ra", "dec", "spec_z", "phot_z"]
+
+  flux_cols:
+    all: false
+    which: []
+    filters: []
+    flux_err_cols: false
+
+  derived_prop:
+    get_mags:
+      all: false
+      which: ["u", "g", "r"]
+      filters:
+        - {col: "u", photometry_type: "gold", quantity: "mag", survey: "lsst", type: "max", value: 24, inequality: "<="}
+        - {col: "g", photometry_type: "gold", quantity: "mag", survey: "lsst", type: "max", value: 24, inequality: "<="}
+      mag_err_cols: false
+
+default:
+  verbose: true
+  description: "Initialize default arguments when no filter is supposed to be passed"
+    # make this outdir relative to the global root path provided in the global config
+  outdir: ""
+  foutname: "default_config_catalog"
+  survey:
+    all: false
+    which: "roman"
+  downSample:
+    factor: null
+    fraction: null
+  photometry:
+    all: false
+    which: "gold"
+  native_prop:
+    nonflux_prop:
+      all: false
+      which: ["objectid", "ra", "phot_z"]
+    filters:
+      - {col: "phot_z", type: "range", bounds: [0.0, 0.1], inequality: [">=", "<"]}
+  flux_cols:
+    all: false
+    which: []
+    filters: []
+    flux_err_cols: false
+  derived_prop:
+    get_mags:
+      all: false
+      which: ["Y"]
+      filters:
+        - {col: "Y", photometry_type: "gold", quantity: "mag", survey: "roman", type: "max", value: 24, inequality: "<="}
+      mag_err_cols: false
+
+lsst_gold_all_rows_noRedshiftCut: 
+  sample_name: &lsst_gold_all_rows_noRedshiftCut lsst_gold_all_rows_noRedshiftCut
+  verbose: true
+  version: &lsst_gold_all_rows_noRedshiftCut_date "16Jul2026_new"
+  description: "Testing the code to generate a full size dataset with only smaller number of columns. Using the new version of code that fragments the pyarrow dataset and applies filter before operations and storage."
+  outdir: "package_validation/lsst/gold/ug_filter_on_ugr"
+  foutname: [*lsst_gold_all_rows_noRedshiftCut, "_", *lsst_gold_all_rows_noRedshiftCut_date]
+  
+  downsample:
+    fraction: null
+    factor: null
+
+  survey:
+    all: false
+    which: "lsst"
+
+  photometry_type:
+    all: false
+    which: "gold"
+
+  native_prop:
+    nonflux_prop:
+      all: false
+      which: ["ra", "dec", "g1", "g2", "spec_z", "phot_z"]
+
+  flux_cols:
+    all: false
+    which: []
+    filters: []
+    flux_err_cols: false
+
+  derived_prop:
+    get_mags:
+      all: false
+      which: ["u", "g"]
+      filters:
+        - {col: ["u", "g", "r"], photometry_type: "gold", quantity: "mag", survey: "lsst", type: "max", value: 24, inequality: "<="}
+      mag_err_cols: false
+
+lsst_gold_test:
+  sample_name: &lsst_gold_test lsst_gold_test
+  verbose: true
+  version: &lsst_gold_test_date "14Jul2026"
+  description: "Testing the code to generate a downsampled subsample from the full dataset."
+  outdir: "package_validation/lsst/gold"
+  foutname: [*lsst_gold_test, "_", *lsst_gold_test_date]
+  
+  downsample:
+    fraction: 0.01
+    factor: null
+
+  survey:
+    all: false
+    which: "lsst"
+
+  photometry_type:
+    all: false
+    which: "gold"
+
+  native_prop:
+    nonflux_prop:
+      all: false
+      which: ["ra", "dec", "g1", "g2", "spec_z", "phot_z"]
+    filters:
+      - {col: "phot_z", type: "range", bounds: [0.0, 1.0], inequality: [">=", "<"]}
+
+  flux_cols:
+    all: false
+    which: []
+    filters: []
+    flux_err_cols: false
+
+  derived_prop:
+    get_mags:
+      all: false
+      which: ["u", "g"]
+      filters:
+        - {col: ["u", "g", "r"], photometry_type: "gold", quantity: "mag", survey: "lsst", type: "max", value: 24, inequality: "<="}
+      mag_err_cols: false
+
+
+lsst_gold_all_rows_test: 
+  sample_name: &lsst_gold_all_rows_test lsst_gold_all_rows_test
+  verbose: true
+  version: &lsst_gold_all_rows_test_date "16Jul2026"
+  description: "Testing the code to generate a full size dataset with only smaller number of columns."
+    #outdir: "package_validation/lsst/gold/phot_z_lt_1_ug_filter_on_ugr"
+  outdir: "package_validation/lsst/gold/ug_filter_on_ugr"
+  foutname: [*lsst_gold_all_rows_test, "_", *lsst_gold_all_rows_test_date]
+  
+  downsample:
+    fraction: null
+    factor: null
+
+  survey:
+    all: false
+    which: "lsst"
+
+  photometry_type:
+    all: false
+    which: "gold"
+
+  native_prop:
+    nonflux_prop:
+      all: false
+      which: ["ra", "dec", "g1", "g2", "spec_z", "phot_z"]
+        #filters:
+        #  - {col: "phot_z", type: "range", bounds: [0.0, 1.0], inequality: [">=", "<"]}
+
+  flux_cols:
+    all: false
+    which: []
+    filters: []
+    flux_err_cols: false
+
+  derived_prop:
+    get_mags:
+      all: false
+      which: ["u", "g"]
+      filters:
+        - {col: ["u", "g", "r"], photometry_type: "gold", quantity: "mag", survey: "lsst", type: "max", value: 24, inequality: "<="}
+      mag_err_cols: false
+
+lsst_gold_mixedCase:
+  verbose: true
+  version: "14Jul2026"
+  description: "testing the code to generate a downsampled subsample from the full dataset."
+  outdir: "package_validation/lsst/gold"
+  downsample:
+    fraction: 0.01
+  survey:
+    all: false
+    which: "lsst"
+  photometry_type:
+    all: false
+    which: ["gold", "pgauss"]
+  native_prop:
+    nonflux_prop:
+      all: false
+      which: ["ra", "dec", "g1", "g2", "spec_z", "phot_z"]
+    filters:
+      - {col: "phot_z", type: "range", bounds: [0.0, 1.0], inequality: [">=", "<"]}
+  flux_cols:
+    all: false
+    which: []
+    filters: []
+    flux_err_cols: false
+  derived_prop:
+    get_mags:
+      all: false
+      which: ["u", "g"]
+      filters:
+        - {col: "Y", photometry_type: "gold", quantity: "mag", survey: "roman", type: "max", value: 30, inequality: "<="}
+        - {col: ["u", "g", "r"], photometry_type: "gold", quantity: "mag", survey: "lsst", type: "max", value: 24, inequality: "<="}
+      mag_err_cols: false
+

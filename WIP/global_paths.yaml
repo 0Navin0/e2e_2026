@@ -1,0 +1,8 @@
+system:
+  root_output_dir: "/work/nlc38/output_base"
+  default_seed: 2026
+
+inputs:
+  source_parquet: "/work/nlc38/e2e_2026/diffsky_cat/e2e_catalog_noshear.parquet"
+  redshift_hdf5: "/work/nlc38/e2e_2026/diffsky_cat/flexzboost_run1/zscatter_data.hdf5"
+
