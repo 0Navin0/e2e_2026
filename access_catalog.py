@@ -6,16 +6,32 @@ from pathlib import Path
 
 catalog_base =  Path("/work/nlc38/output_base")
 
-def magLim_parquet_filter(mag_col="mag_gold_LSST_i", z_col="phot_z"):
+def magLim_parquet_filter(mag_col="mag_gold_LSST_i", z_col="phot_z", **kwargs):
     mag = ds.field(mag_col)
     photoz = ds.field(z_col)
     return (mag < ((photoz * 4) + 18)) & (mag > 17.5)
+
+def only_redshift_parquet_filter(z_col, zmin, zmax, **kwargs):
+    photoz = ds.field(z_col)
+    return (photoz >= zmin) & (photoz < zmax)
+
+def full_redshift_bin_magLim_pyArrTable(
+        dataset, 
+        cols=None, 
+        z_col="phot_z",
+        zmin=0.2,
+        zmax=1.05,
+        **kwargs
+    ):
+    filt = only_redshift_parquet_filter(z_col, zmin, zmax, **kwargs)
+    return dataset.to_table(columns=cols, filter=filt)
 
 def magLim_sample_pyArrTable(
         dataset, 
         cols=None, 
         mag_col="mag_gold_LSST_i",
-        z_col="phot_z"
+        z_col="phot_z",
+        **kwargs
     ):
     """return a pyarrow.dataset containing magLim selection.
     cols:
@@ -25,8 +41,13 @@ def magLim_sample_pyArrTable(
     z_col:
       The redshift column used to import magLim redshift selection.
     """
-    filt = magLim_parquet_filter(mag_col, z_col)
+    filt = magLim_parquet_filter(mag_col, z_col, **kwargs)
     return dataset.to_table(columns=cols, filter=filt)
+
+sample_selector_pyArrTable = {
+        "only_redshift": full_redshift_bin_magLim_pyArrTable,
+        "magLim": magLim_sample_pyArrTable
+        }
 
 def magLim_sample_df(pyArrTable):
     """Return a pandas dataframe from the pyarrwow table object"""
@@ -35,7 +56,12 @@ def magLim_sample_df(pyArrTable):
 def load_default_dataset():
     """Return the E2E dataset.
     This contains additional columns of magnitudes, magnitude errors, phot_z
-    and spec_z added by my code."""
+    and spec_z added by my code.
+
+    Note: this catalog, has a 
+        cut on gold_LSST_i in (17,24]
+        and z_phot [0.0, 1.4)
+    """
     filedir = catalog_base / "package_validation/survey_all/photmtry_all/maglim_fluxlim_superset"
     flpath = filedir / "maglim_fluxlim_superset_17Jul2026.parquet"
     return ds.dataset(flpath, format="parquet")
@@ -62,7 +88,12 @@ def cols_for_sample_selection():
     dat = load_default_dataset()
     return ordered_cols(dat, "mag")
 
-def write_magLim_fluxLim_supersample(filename, mag_or_flux="mag", fmt=".parquet"):
+col_selector = {
+        "mag": cols_for_sample_selection(),
+        "flux": cols_for_sompz()
+}
+
+def write_magLim_fluxLim_supersample(filename, selector_input="magLim", mag_or_flux="mag", fmt=".parquet"):
     """Write parquet/dataframe objects for the MagLim/FluxLim supersample.
     mag_or_flux: flux or mag
       The flux columns should be in flux or magnitude values. For SOMPZ pipelie use "flux".
@@ -71,7 +102,9 @@ def write_magLim_fluxLim_supersample(filename, mag_or_flux="mag", fmt=".parquet"
     """
     fpath = filename.with_suffix(fmt)
     dat = load_default_dataset()
-    magLim_dataset = magLim_sample_pyArrTable(dat, cols=cols_for_sompz(), mag_col="mag_gold_LSST_i", z_col="phot_z")
+
+    selector_func = sample_selector_pyArrTable[selector_input]
+    magLim_dataset = selector_func(dat, cols=col_selector[mag_or_flux], mag_col="mag_gold_LSST_i", z_col="phot_z")
     print("Number of objects in this catalog, ", magLim_dataset.num_rows)
 
     if fmt==".parquet":
@@ -127,6 +160,25 @@ if __name__=="__main__":
     all_cols = dat.schema.names
     print("All available columns in my parquet file: ", all_cols)
 
-    # used to store the data in parquet format for Boyan's SOMPZ and my sample selection work: 17 July 2026
-    write_magLim_fluxLim_supersample(catalog_base / "magLim_fluxLim_supersample_sompz", "flux", ".parquet")
-    write_magLim_fluxLim_supersample(catalog_base / "magLim_fluxLim_supersample_samp_sel", "mag", ".parquet")
+    ## used to store the data in parquet format for Boyan's SOMPZ and my sample selection work: 17 July 2026
+    #write_magLim_fluxLim_supersample(
+    #        catalog_base / "magLim_fluxLim_supersample_sompz", 
+    #        selector_input="magLim", 
+    #        mag_or_flux = "flux", 
+    #        fmt = ".parquet"
+    #)
+    #write_magLim_fluxLim_supersample(
+    #        catalog_base / "magLim_fluxLim_supersample_samp_sel", 
+    #        selector_input="magLim", 
+    #        mag_or_flux = "mag", 
+    #        fmt = ".parquet"
+    #)
+    # Note that this is not the comparison I actually intended. I wanted all
+    # the objects to some realistic deep tier depth but this catalog only has
+    # objects upto 24th mag, in lsst_gold (which currently is a true flux according to Chun-Hao)
+    write_magLim_fluxLim_supersample(
+            catalog_base / "magLim_fluxLim_supersample_z_0.0_1.05", 
+            selector_input="only_redshift", 
+            mag_or_flux="mag", 
+            fmt=".parquet"
+    )

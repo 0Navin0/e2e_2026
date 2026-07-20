@@ -1,11 +1,10 @@
 # this code template is copied from /hpc/group/cosmology/nlc38/ROMAN_HLIS/sample_selection_from_Cardinal/plot_binned_deltazByOnePlusz_dist.py
 import sys
 from pathlib import Path
-# get cardinal deep data
-from access_catalog import get_clean_cardinalDeep_data
 sys.path.insert(0, "/hpc/group/cosmology/nlc38/ROMAN_HLIS/merge_truth_and_main_galaxy_files/maglim_sampling_scripts")
 from make_useful_plots_allDataTogether import (binned_statistic)
 
+import pyarrow.parquet as pq
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -15,22 +14,30 @@ plt.rcParams["font.family"]="New Times Roman"
 
 if __name__=="__main__":
 
-    outdir = Path("/hpc/group/cosmology/nlc38/ROMAN_HLIS/sample_selection_from_Cardinal/zCut_i-magCut")
+    outdir = Path("./")
+    indir = Path("/work/nlc38/output_base")
+    catalog_dir = indir / "magLim_for_Boyan"
 
-
-    # Setup full deep data
-    fdf = get_clean_cardinalDeep_data(sample_size=100_000, use_cols=['z', 'zobs'])
-    fdf = fdf.loc[(fdf.zobs>=0.2) & (fdf.zobs<1.05)] #keep within maglim z-range
+    # Setup full data within z=0.2-1.05
+    flname = indir / "magLim_fluxLim_supersample_full_z_range.parquet"
+    # spec_z and z are the same
+    nobj = pq.ParquetFile(flname).metadata.num_rows
+    fdf = pd.read_parquet(flname, columns=["phot_z", "z"]).sample(n=int(nobj/10), random_state=42)
     zfull = fdf.z.values
-    zobsfull = fdf.zobs.values
+    zobsfull = fdf.phot_z.values
     zdiff_full = zobsfull - zfull
     zdiff_ratio_full = zdiff_full /(1+zfull)
 
     # Maglim data
-    df = pd.read_csv(outdir/ "Cardinal_MagLim_z_Range_0.00_1.05.csv")
-    df = df.loc[(df.zobs>=0.2)] #keep within MagLim z-range
+    # no need to downsample here
+    df = pd.read_parquet(
+            indir / "magLim_fluxLim_supersample_sompz.parquet", 
+            columns=["phot_z", "z"], 
+            filters=[('phot_z', '>=', 0), ('phot_z', '<', 1.05)]
+    )
+    df = df.loc[(df.phot_z>=0.2)] #keep within MagLim z-range
     z = df.z.values
-    zobs = df.zobs.values
+    zobs = df.phot_z.values
     zdiff = zobs - z
     zdiff_ratio = zdiff /(1+z)
 
@@ -55,7 +62,7 @@ if __name__=="__main__":
     ax.plot(fzbin_centers, fbinned_zratio, ":", label= rf"All: $z_{{\rm photo}} \in [{zobsfull.min():0.2f},{zobsfull.max():0.2f})$")
     ax.legend(loc="best", 
             fontsize=10, 
-            title="Cardinal Deep-field\n" + label + f"\nBin-width={zstep:0.3f}",
+            title="E2E-2026 500 sq deg\n" + label + f"\nBin-width={zstep:0.3f}",
             title_fontsize=12
             )
     ax.set_xlabel(r"$z_{\rm true}$", fontsize=16)
@@ -64,7 +71,8 @@ if __name__=="__main__":
     ax.yaxis.set_minor_locator(ticker.MultipleLocator(0.001))
     ax.yaxis.set_major_locator(ticker.MultipleLocator(0.002))
     ax.grid(which='both', axis='both', color='gray', linestyle='--', alpha=0.3)
-    pngf = f"{outdir}/deltaz_onePlusz_maglim_deep_onlyStats_vs_fullSample.png"
+    # caveat, the full sample is limited in depth to gold_lsst<24 (I should have used pgauss instead of gold)
+    pngf = f"{outdir}/deltaz_onePlusz_maglim_onlyStats_vs_fullSample.png"
     fig.savefig(pngf , dpi=200, bbox_inches="tight")
     print(f"saved {pngf}")
     plt.close(fig)
