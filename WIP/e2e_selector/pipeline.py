@@ -5,55 +5,13 @@ import numpy as np
 import h5py
 import json
 import os
-from .config_parser import resolve_columns_and_actions, SURVEY_MAP
-from .utils import calculate_mags_only, calculate_mag_errors, evaluate_condition, ensure_output_dir
+from .config_parser import resolve_columns_and_actions
+from .utils import (
+        calculate_mags, calculate_mag_errors, ensure_output_dir, 
+        generate_sampling_mask, compute_dynamic_batch_size,
+        apply_filters
+)
 import time
-
-def generate_sampling_mask(total_objects, downsample_cfg, seed):
-    if not downsample_cfg: return None
-    rng = np.random.default_rng(seed)
-    fraction, factor = downsample_cfg.get("fraction"), downsample_cfg.get("factor")
-    if fraction is not None: 
-        target_size = int(total_objects * fraction)
-    elif factor is not None: 
-        target_size = int(total_objects // factor)
-    else: 
-        return None
-    
-    sampled_indices = rng.choice(total_objects, size=target_size, replace=False)
-    sampled_indices.sort()
-    return sampled_indices
-
-def compute_dynamic_batch_size(num_columns, max_cells=40_000_000):
-    """Enforces dynamic row limit thresholds depending on active parameter counts [6]."""
-    return max(10000, max_cells // num_columns)
-
-def apply_filters(df, filters):
-    master_mask = np.ones(len(df), dtype=bool)
-    for filt in filters:
-        cols = filt["col"] if isinstance(filt["col"], list) else [filt["col"]]
-        qty = filt.get("quantity", "raw")
-        
-        for col in cols:
-            if qty == "mag" or qty == "flux":
-                p = filt.get("photometry_type", "gold")
-                s = filt.get("survey", "roman").lower()
-                suffix = SURVEY_MAP[s]["suffix"]
-                fmt_b = SURVEY_MAP[s]["case"](col)
-                target_key = f"{qty}_{p}{suffix}_{fmt_b}"
-            else:
-                target_key = col
-                
-            if target_key not in df.columns: continue
-                
-            if filt["type"] == "range":
-                bounds, ineqs = filt["bounds"], filt["inequality"]
-                # Evaluate range limits simultaneously
-                master_mask &= evaluate_condition(df[target_key], ineqs[0], bounds[0])
-                master_mask &= evaluate_condition(df[target_key], ineqs[1], bounds[1])
-            else:
-                master_mask &= evaluate_condition(df[target_key], filt["inequality"], filt["value"])
-    return df[master_mask]
 
 def run_pipeline(config):
     # Initialize high-level global pipeline timer
@@ -92,7 +50,8 @@ def run_pipeline(config):
     sample_df["spec_z"] = 0.0
     if actions["calc_mags"]:
         for c in final_keep_cols:
-            if c not in sample_df.columns: sample_df[c] = 0.0
+            if c not in sample_df.columns:
+                sample_df[c] = 0.0
             
     writer_schema = pa.Schema.from_pandas(sample_df[final_keep_cols])
     
@@ -158,7 +117,7 @@ def run_pipeline(config):
                         me_col = f_col.replace("flux_", "mag_err_")
                         
                         if actions["calc_mags"]:
-                            batch_df[m_col] = calculate_mags_only(batch_df[f_col].values)
+                            batch_df[m_col] = calculate_mags(batch_df[f_col].values)
                         if actions["calc_mag_errs"] and fe_col in batch_df.columns:
                             batch_df[me_col] = calculate_mag_errors(batch_df[f_col].values, batch_df[fe_col].values)
 
